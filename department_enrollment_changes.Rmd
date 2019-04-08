@@ -70,24 +70,64 @@ spring_2000_delim <- read_delim(file = spring_2000_lines,
                                   X6 = col_double()),
                                 trim_ws = TRUE)
 
+names(spring_2000_delim)[1]<-"department"
+
 spring_2000 <- spring_2000_delim %>%
   slice(seq(1, nrow(spring_2000_delim), by = 2)) %>%
-  select(X1, X6) %>%
-  filter(!is.na(X6))
-  
+  select(department, X6) %>%
+  filter(!is.na(X6),
+         X6 != 0) %>%
+  mutate(department = fct_recode(department,
+    AFRAMER = "AFROAM",
+    CPB = "BIOCHSCI",
+    TDM = "DRAMA",
+    EAFM = "EABS",
+    LIFESCI = "BIOLSCI",
+    COMPLIT = "LIT",
+    NEURO = "NEUROBI",
+    RSRA = "RSEA",
+    SANSKRIT = "SANSKRT",
+    WOMGEN = "WOM-STD")
+  )
+
+spring_2019 <- spring_2019 %>%
+  filter(u_grad != 0,
+         !is.na(course_title)) %>%
+  separate(col = "course_title", sep =  c(" "), into = c("department", "number")) %>%
+  mutate(department = fct_recode(department,
+    CLASSIC = "CLS-STDY",
+    GERMAN = "GERM-STD")
+  )
 ```
 
 ```{r graphic, message = FALSE}
-spring_2000 %>%
-  group_by(X1) %>%
+
+topten_2019 <- spring_2019 %>%
+  filter(department != "US-WORLD",
+         department != "EXPOS",
+         department != "PHYSCI") %>%
+  group_by(department) %>%
+  mutate(ugrad_ct = sum(u_grad)) %>%
+  select(department, ugrad_ct) %>%
+  distinct() %>%
+  ungroup() %>%
+  arrange(desc(ugrad_ct)) %>%
+  slice(1:10) %>%
+  print()
+
+
+grouped_2000 <- spring_2000 %>%
+  group_by(department) %>%
   mutate(ugrad_ct = sum(X6)) %>%
   select(-X6) %>%
   distinct() %>%
-  ungroup() %>%
-  mutate(X1 = fct_recode(X1, c(
-    AFRAMER = "AFROAM")
-  ))
+  ungroup()
+
+all <- inner_join(x = topten_2019, y = grouped_2000, by = "department", suffix = c(".2019", ".2000"))
+
+all %>%
+  mutate(change = ugrad_ct.2019 - ugrad_ct.2000) %>%
+  ggplot(mapping = aes(x = , y = ))
   
-spring_2019 %>%
 ```
 
