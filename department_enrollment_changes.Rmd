@@ -337,7 +337,7 @@ all %>%
   
   # Add appropriate titles, also adding new lines where necessary
   
-  labs(title = "How Did the Ten Most Popular Departments in\nSpring 2019 Fare in Spring 2000?",
+  labs(title = "How Did the Ten Most Popular Departments in\nSpring 2019 Fare in Spring 2000 at Harvard?",
        subtitle = "Change from 2000 to 2019 in the number of undergraduates enrolled in the top ten most\nenrolled departments (in 2019) portrays the sharp decline in popularity of English, while\nCS, Econ, and Stat soar",
        caption = "Source: Harvard Registrar") +
   
