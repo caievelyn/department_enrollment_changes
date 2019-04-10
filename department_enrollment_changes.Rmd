@@ -118,7 +118,8 @@ spring_2000_delim <- read_delim(file = spring_2000_lines,
                                 
                                 trim_ws = TRUE)
 
-# Rename the X6 Column as "department"
+# Rename the X6 Column as "department" - this is important later for when we
+# want to join datasets
 
 names(spring_2000_delim)[1]<-"department"
 
@@ -252,31 +253,95 @@ topten_2019 <- spring_2019 %>%
   
   slice(1:10)
 
+# Also find the undergraduate enrollment sums per department for spring 2000
 
 grouped_2000 <- spring_2000 %>%
+  
+  # Same process here: group by the department and create a new variable (called
+  # the same thing - doesn't really matter here if it isn't) through mutate
+  
   group_by(department) %>%
   mutate(ugrad_ct = sum(X6)) %>%
+  
+  # Unselect the original undergraduate counts per course
+  
   select(-X6) %>%
+  
+  # Select out the duplicating rows 
+  
   distinct() %>%
+  
+  # Call our favorite, most underrated function
+  
   ungroup()
+
+# Merge the top ten 2019 dataset with the previously calculated 2000 dataset
+# containing undergraduate enrollment information through an inner_join, which
+# will only include shared values in both datasets in a given column (in this
+# case, it is department, which is why it was crucia to rename this column
+# name). Also add a suffix so we can distinguish which year was what count.
 
 all <- inner_join(x = topten_2019, y = grouped_2000, by = "department", suffix = c(".2019", ".2000"))
 
+# Create the bar plot graphic
+
 all %>%
+  
+  # Calculate a new variable, which calculates the change in enrollment from
+  # 2000 to 2019
+  
   mutate(change = ugrad_ct.2019 - ugrad_ct.2000) %>%
+  
+  # Use case_when to populate values in a new column created through mutate()
+  # called type_of_change that lets us know whether the change in enrollment was
+  # positive or negative. This is important so we can color the two differently
+  # in our graphic.
+  
   mutate(type_of_change = case_when(
     change > 0 ~ "pos",
     change < 0 ~ "neg")) %>%
+  
+  # Call ggplot, mapping the categorical variable on the x-axis and the change
+  # variable on the y-axis, with the bar colors corresponding to the type of
+  # change as mentioned earlier
+  
   ggplot(mapping = aes(x = department, y = change, fill = type_of_change)) +
+  
+  # Add the bars and remove the legend since the colors are self-explanatory
+  
   geom_col(show.legend = FALSE) +
+  
+  # Flip the coordinates so the x-axis labels can look more uniform
+  
   coord_flip() +
+  
+  # Change the y-scale so that tick marks are every 100 enrollees for ease of
+  # reading
+  
   scale_y_continuous(breaks = seq(-500, 1000, by = 100)) +
+  
+  # Use the Set1 palette from the RColorBrewer palettes to color the bars, with
+  # strongly contrasting colors again for ease of reading
+  
   scale_fill_brewer(palette = "Set1") +
+  
+  # Call theme to adjust some preferences, such as aligning the x-axis tick
+  # labels
+  
   theme(axis.text.x = element_text(hjust = 0),
+        
+        # Remove the major x grid panels since they are not particularly helpful
+        # (as the categorical variable is graphed on the x-axis anyways)
+        
         panel.grid.major.y = element_blank()) +
+  
+  # Add appropriate titles, also adding new lines where necessary
+  
   labs(title = "How Did the Ten Most Popular Departments in\nSpring 2019 Fare in Spring 2000?",
        subtitle = "Change from 2000 to 2019 in the number of undergraduates enrolled in the top ten most\nenrolled departments in 2019 portrays the sharp decline in popularity of English, while\nCS, Econ, and Stat soar",
        caption = "Source: Harvard Registrar") +
+  
+  # Change the x- and y- axis labels so they are more professional and explain the change in numbers better than just "change" (for example)
   xlab("Department") +
   ylab("Change In Enrollment")
   
