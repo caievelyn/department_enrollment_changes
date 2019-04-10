@@ -200,7 +200,7 @@ spring_2019 <- spring_2019 %>%
   )
 ```
 
-```{r graphic, message = FALSE}
+```{r graphic, message = FALSE, warning = FALSE}
 
 # Create a dataframe containing information regarding the undergraduate
 # enrollment of the top ten most enrolled departments in spring 2019
@@ -338,10 +338,11 @@ all %>%
   # Add appropriate titles, also adding new lines where necessary
   
   labs(title = "How Did the Ten Most Popular Departments in\nSpring 2019 Fare in Spring 2000?",
-       subtitle = "Change from 2000 to 2019 in the number of undergraduates enrolled in the top ten most\nenrolled departments in 2019 portrays the sharp decline in popularity of English, while\nCS, Econ, and Stat soar",
+       subtitle = "Change from 2000 to 2019 in the number of undergraduates enrolled in the top ten most\nenrolled departments (in 2019) portrays the sharp decline in popularity of English, while\nCS, Econ, and Stat soar",
        caption = "Source: Harvard Registrar") +
   
   # Change the x- and y- axis labels so they are more professional and explain the change in numbers better than just "change" (for example)
+  
   xlab("Department") +
   ylab("Change In Enrollment")
   
