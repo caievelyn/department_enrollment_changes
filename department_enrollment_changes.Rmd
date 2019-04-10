@@ -18,6 +18,7 @@ library(readxl)
 library(janitor)
 library(rvest)
 library(ggthemes)
+library(viridis)
 ```
 
 ```{r cleanup, warning = FALSE, message = FALSE}
@@ -294,20 +295,43 @@ all %>%
   
   # Use case_when to populate values in a new column created through mutate()
   # called type_of_change that lets us know whether the change in enrollment was
-  # positive or negative. This is important so we can color the two differently
-  # in our graphic.
+  # positive or negative. This would be useful for further analysis in future
+  # projects. Originally I used it to color the bars according to whether the
+  # change was positive or negative, but that was rendered unnecessary when
+  # using fct_relevel and scale_fill_viridis, so I leave it here for future
+  # projects.
   
   mutate(type_of_change = case_when(
     change > 0 ~ "pos",
     change < 0 ~ "neg")) %>%
   
+  # Arrange from highest to lowest changes in enrollment
+  
+  arrange(desc(change)) %>%
+  
+  # Use the results from the arrange to relevel the factors for when we call
+  # ggplot
+  
+  mutate(department = fct_relevel(department,
+                                  "COMPSCI",
+                                  "ECON",
+                                  "STAT",
+                                  "MATH",
+                                  "HISTSCI",
+                                  "GOV",
+                                  "PSY",
+                                  "HIST",
+                                  "SPANSH",
+                                  "ENGLISH")) %>%
+  
   # Call ggplot, mapping the categorical variable on the x-axis and the change
-  # variable on the y-axis, with the bar colors corresponding to the type of
-  # change as mentioned earlier
+  # variable on the y-axis, with the bar colors corresponding to department so a
+  # nice gradient will be going on in the graphic
   
-  ggplot(mapping = aes(x = department, y = change, fill = type_of_change)) +
+  ggplot(mapping = aes(x = department, y = change, fill = department)) +
   
-  # Add the bars and remove the legend since the colors are self-explanatory
+  # Add the bars and remove the legend since the departments are already
+  # labelled
   
   geom_col(show.legend = FALSE) +
   
@@ -319,11 +343,6 @@ all %>%
   # reading
   
   scale_y_continuous(breaks = seq(-500, 1000, by = 100)) +
-  
-  # Use the Set1 palette from the RColorBrewer palettes to color the bars, with
-  # strongly contrasting colors again for ease of reading
-  
-  scale_fill_brewer(palette = "Set1") +
   
   # Call theme to adjust some preferences, such as aligning the x-axis tick
   # labels
@@ -337,14 +356,23 @@ all %>%
   
   # Add appropriate titles, also adding new lines where necessary
   
-  labs(title = "How Did the Ten Most Popular Departments in\nSpring 2019 Fare in Spring 2000 at Harvard?",
-       subtitle = "Change from 2000 to 2019 in the number of undergraduates enrolled in the top ten most\nenrolled departments (in 2019) portrays the sharp decline in popularity of English, while\nCS, Econ, and Stat soar",
+  labs(title = "Ten Most Popular Departments at Harvard College in Spring 2019 Compared\n to Enrollments in Spring 2000",
+       subtitle = "Change from 2000 to 2019 in the number of undergraduates enrolled in the top ten most\nenrolled departments (in 2019) portrays the decline in popularity of the humanities, while\nSTEM fields soar",
        caption = "Source: Harvard Registrar") +
   
-  # Change the x- and y- axis labels so they are more professional and explain the change in numbers better than just "change" (for example)
+  # Change the x- and y- axis labels so they are more professional and explain
+  # the change in numbers better than just "change" (for example)
   
   xlab("Department") +
-  ylab("Change In Enrollment")
+  ylab("Change In Enrollment") +
+  
+  # Use the scale_fill_viridis function from the viridis library to get a nice
+  # gradient going on for the bar fill colors. Use the inferno option, specify
+  # that this is a discrete value, and I just filled around with begin and end
+  # values to get the desired range of color
+  
+  scale_fill_viridis(discrete = TRUE, option = "inferno", begin = .2, end = .5)
   
 ```
 
+### Rpubs link: http://rpubs.com/evelyncai/department_enrollment_changes
