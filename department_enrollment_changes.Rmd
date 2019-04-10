@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE)
 
 # Load libraries
+
 library(tidyverse)
 library(ggplot2)
 library(gganimate)
@@ -20,51 +21,77 @@ library(rvest)
 
 ```{r cleanup, warning = FALSE, message = FALSE}
 
-
-
 # Read in the spring 2019 excel file dynamically through the URL
+
 xlsx_2019 <- download.file("https://registrar.fas.harvard.edu/files/fas-registrar/files/class_enrollment_summary_by_term_3.22.19.xlsx",
+                           
                            # Name the destination file, ending in .xlsx for easy reading through readxl
+                           
                            destfile = "spring_2019.xlsx",
+                           
                            # Ensure compatibility with both OS and Windows systems
+                           
                            mode = "wb")
 
 # Read in the excel file through read_xlsx, a function in the readxl library. Skip the first 3 lines of NA values
+
 spring_2019 <- read_xlsx("spring_2019.xlsx", skip = 3) %>%
+  
   # Use the clean_names function in the janitor library to standardize column names
+  
   clean_names()
 
 # Delete the file, as the dataframe has now been read into the environment
+
 file_delete("spring_2019.xlsx")
 
-# Guess the encoding of the HTML document for the enrollment information from the spring of 2000, since it is deprecated HTML
-guess_encoding("http://static.fas.harvard.edu/registrar/reports/statistics/Spring_2000/CourseEnrollmentStatistics.html")
+# Guess the encoding of the HTML document for the enrollment information from the spring of 2000, since it is deprecated HTML, using the guess_encoding() function from the rvest package.
+# Run: guess_encoding("http://static.fas.harvard.edu/registrar/reports/statistics/Spring_2000/CourseEnrollmentStatistics.html")
 
-# Use the read_html function in the rvest library to read in the HTML, taking the encoding previously obtained from guess_encoding
+# Use the read_html function in the rvest package to read in the HTML, taking the encoding previously obtained from guess_encoding
+
 html_2000 <- read_html("http://static.fas.harvard.edu/registrar/reports/statistics/Spring_2000/CourseEnrollmentStatistics.html", encoding = "ISO-8859-2")
 
 text_2000 <- html_2000 %>%
+  
   # Read in the html body text only (ignoring other portions of the document, such as XML)
+  
   html_text() %>%
+  
   # Trim strings to remove extraneous spaces
+  
   str_trim() %>%
+  
   # Unlist to create a vector to easily create a dataframe
+  
   unlist()
 
 # Use the read_lines functionality to read in the character vector previously obtained
+
 spring_2000_lines <- read_lines(file = text_2000,
+                                
                           # Set N-Max as -1 so all lines are read
+                          
                           n_max = -1,
+                          
                           # SKip the first 34 rows that are not data
+                          
                           skip = 34,
+                          
                           # Skip rows with empty spaces
+                          
                           skip_empty_rows = TRUE)
 
 # Use the read_delim functionality to further clean the data by separating values by spaces
+
 spring_2000_delim <- read_delim(file = spring_2000_lines,
+                                
                                 # Separate by space
+                                
                                 delim = " ",
+                                
                                 # Detail the column names
+                                
                                 col_names = FALSE,
                                 col_types = cols(
                                   X6 = col_double()),
