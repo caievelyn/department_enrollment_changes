@@ -12,7 +12,6 @@ knitr::opts_chunk$set(echo = FALSE)
 
 library(tidyverse)
 library(ggplot2)
-library(gganimate)
 library(fs)
 library(readxl)
 library(janitor)
@@ -344,6 +343,10 @@ all %>%
   
   scale_y_continuous(breaks = seq(-500, 1000, by = 100)) +
   
+  # Use the minimal theme for a white background and simpler graphics
+  
+  theme_minimal() +
+  
   # Call theme to adjust some preferences, such as aligning the x-axis tick
   # labels
   
@@ -352,7 +355,7 @@ all %>%
         # Remove the major x grid panels since they are not particularly helpful
         # (as the categorical variable is graphed on the x-axis anyways)
         
-        panel.grid.major.y = element_blank()) +
+        panel.grid.minor.x = element_blank()) +
   
   # Add appropriate titles, also adding new lines where necessary
   
@@ -365,6 +368,24 @@ all %>%
   
   xlab("Department") +
   ylab("Change In Enrollment") +
+  
+  # Change the x-axis tick mark labels using scale_x_discrete, since the
+  # variable is discrete. Specify "bottom" since this is the x-axis (even though
+  # we flipped the coordinates) so that the tick mark labels areon the left.
+  # Then, change the labels so the first letter is capitalized and the
+  # department labels are expanded to their full name.
+  
+  scale_x_discrete(position = "bottom", labels = c(
+                   "ENGLISH" = "English",
+                   "SPANSH" = "Spanish",
+                   "HIST" = "History",
+                   "PSY" = "Psychology",
+                   "GOV" = "Government",
+                   "HISTSCI" = "History of Science",
+                   "MATH" = "Math",
+                   "STAT" = "Statistics",
+                   "ECON" = "Economics",
+                   "COMPSCI" = "Computer Science")) +
   
   # Use the scale_fill_viridis function from the viridis library to get a nice
   # gradient going on for the bar fill colors. Use the inferno option, specify
