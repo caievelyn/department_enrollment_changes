@@ -17,6 +17,7 @@ library(fs)
 library(readxl)
 library(janitor)
 library(rvest)
+library(ggthemes)
 ```
 
 ```{r cleanup, warning = FALSE, message = FALSE}
@@ -154,7 +155,21 @@ all <- inner_join(x = topten_2019, y = grouped_2000, by = "department", suffix =
 
 all %>%
   mutate(change = ugrad_ct.2019 - ugrad_ct.2000) %>%
-  ggplot(mapping = aes(x = , y = ))
+  mutate(type_of_change = case_when(
+    change > 0 ~ "pos",
+    change < 0 ~ "neg")) %>%
+  ggplot(mapping = aes(x = department, y = change, fill = type_of_change)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(-500, 1000, by = 100)) +
+  scale_fill_brewer(palette = "Set1") +
+  theme(axis.text.x = element_text(hjust = 0),
+        panel.grid.major.y = element_blank()) +
+  labs(title = "How Did the Ten Most Popular Departments in\nSpring 2019 Fare in Spring 2000?",
+       subtitle = "Change from 2000 to 2019 in the number of undergraduates enrolled in the top ten most\nenrolled departments in 2019 portrays the sharp decline in popularity of English, while\nCS, Econ, and Stat soar",
+       caption = "Source: Harvard Registrar") +
+  xlab("Department") +
+  ylab("Change In Enrollment")
   
 ```
 
