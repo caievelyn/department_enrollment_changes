@@ -26,19 +26,23 @@ library(ggthemes)
 
 xlsx_2019 <- download.file("https://registrar.fas.harvard.edu/files/fas-registrar/files/class_enrollment_summary_by_term_3.22.19.xlsx",
                            
-                           # Name the destination file, ending in .xlsx for easy reading through readxl
+                           # Name the destination file, ending in .xlsx for easy
+                           # reading through readxl
                            
                            destfile = "spring_2019.xlsx",
                            
-                           # Ensure compatibility with both OS and Windows systems
+                           # Ensure compatibility with both OS and Windows
+                           # systems
                            
                            mode = "wb")
 
-# Read in the excel file through read_xlsx, a function in the readxl library. Skip the first 3 lines of NA values
+# Read in the excel file through read_xlsx, a function in the readxl library.
+# Skip the first 3 lines of NA values
 
 spring_2019 <- read_xlsx("spring_2019.xlsx", skip = 3) %>%
   
-  # Use the clean_names function in the janitor library to standardize column names
+  # Use the clean_names function in the janitor library to standardize column
+  # names
   
   clean_names()
 
@@ -46,16 +50,22 @@ spring_2019 <- read_xlsx("spring_2019.xlsx", skip = 3) %>%
 
 file_delete("spring_2019.xlsx")
 
-# Guess the encoding of the HTML document for the enrollment information from the spring of 2000, since it is deprecated HTML, using the guess_encoding() function from the rvest package.
-# Run: guess_encoding("http://static.fas.harvard.edu/registrar/reports/statistics/Spring_2000/CourseEnrollmentStatistics.html")
+# Guess the encoding of the HTML document for the enrollment information from
+# the spring of 2000, since it is deprecated HTML, using the guess_encoding()
+# function from the rvest package. 
 
-# Use the read_html function in the rvest package to read in the HTML, taking the encoding previously obtained from guess_encoding
+# Run:
+# guess_encoding("http://static.fas.harvard.edu/registrar/reports/statistics/Spring_2000/CourseEnrollmentStatistics.html")
+
+# Use the read_html function in the rvest package to read in the HTML, taking
+# the encoding previously obtained from guess_encoding
 
 html_2000 <- read_html("http://static.fas.harvard.edu/registrar/reports/statistics/Spring_2000/CourseEnrollmentStatistics.html", encoding = "ISO-8859-2")
 
 text_2000 <- html_2000 %>%
   
-  # Read in the html body text only (ignoring other portions of the document, such as XML)
+  # Read in the html body text only (ignoring other portions of the document,
+  # such as XML)
   
   html_text() %>%
   
@@ -67,7 +77,8 @@ text_2000 <- html_2000 %>%
   
   unlist()
 
-# Use the read_lines functionality to read in the character vector previously obtained
+# Use the read_lines functionality to read in the character vector previously
+# obtained
 
 spring_2000_lines <- read_lines(file = text_2000,
                                 
@@ -83,7 +94,8 @@ spring_2000_lines <- read_lines(file = text_2000,
                           
                           skip_empty_rows = TRUE)
 
-# Use the read_delim functionality to further clean the data by separating values by spaces
+# Use the read_delim functionality to further clean the data by separating
+# values by spaces
 
 spring_2000_delim <- read_delim(file = spring_2000_lines,
                                 
@@ -91,20 +103,59 @@ spring_2000_delim <- read_delim(file = spring_2000_lines,
                                 
                                 delim = " ",
                                 
-                                # Detail the column names
+                                # Ensure the first row isn't read in as column
+                                # names
                                 
                                 col_names = FALSE,
+                                
+                                # Specify that the undergraduate enrollment
+                                # column contains a double
+                                
                                 col_types = cols(
                                   X6 = col_double()),
+                                
+                                # Trim off any white space
+                                
                                 trim_ws = TRUE)
+
+# Rename the X6 Column as "department"
 
 names(spring_2000_delim)[1]<-"department"
 
+# Read in the previously read file and clean up factor levels that are labelled
+# incorrectly
+
 spring_2000 <- spring_2000_delim %>%
+  
+  # Select every odd row in the delim-read file by sequencing starting at 1 and
+  # skipping by 2, as the even rows only have the 'total' number of enrollees,
+  # which is unneeded information this time around
+  
   slice(seq(1, nrow(spring_2000_delim), by = 2)) %>%
+  
+  # Select for the relevant columns
+  
   select(department, X6) %>%
+  
+  # Ensure that the undergraduate enrollee data exists and is not 0
+  
   filter(!is.na(X6),
          X6 != 0) %>%
+  
+  # Recode factor levels that are slightly off, which may be due to the
+  # registrar revamping their system of labelling and categorizing classes.
+  # There are also discrepancies owing to new departments, some brand-new such
+  # as the smaller language departments, but also previous departments (such as
+  # Biology) that were split into more specific sub-areas (Biology is now split
+  # into MCB, HDRB, OEB, etc.) Future steps would be to explore these changes
+  # more, and whether any departments were merely renamed, or whether any in
+  # spring 2019 are identical matches for those in spring 2000 save for the
+  # name. Any uncertainties were checked against the old course catalog for
+  # 2000, found at
+  # http://registrar.fas.harvard.edu/files/fas-registrar/files/1999-2000.pdf. Of
+  # course, these recoded values are not comprehensive, but rather to remedy the
+  # most glaring discrepancies between spring 2019 and spring 2000.
+  
   mutate(department = fct_recode(department,
     AFRAMER = "AFROAM",
     CPB = "BIOCHSCI",
@@ -118,10 +169,30 @@ spring_2000 <- spring_2000_delim %>%
     WOMGEN = "WOM-STD")
   )
 
+# Alter the spring_2019 dataframe so that it also only displays the information
+# we want
+
 spring_2019 <- spring_2019 %>%
+  
+  # Ensure that the undergraduate enrollment count is not 0 and that the course
+  # has a name
+  
   filter(u_grad != 0,
          !is.na(course_title)) %>%
+  
+  # Separate the catalog number into the first half of the title (what I'm
+  # calling the 'department' for simplicity's sake) and the second half (the
+  # course number within the sequence of all other courses in the department or
+  # field of study)
+  
   separate(col = "course_title", sep =  c(" "), into = c("department", "number")) %>%
+  
+  # Future steps here would be to recode departments that either have extreme
+  # overlap or are more or less considered the same department. For example,
+  # here German Studies have been recoded as German and Classic Studies have
+  # been recoded as Classic, as there seems to be extreme overlap (perhaps they
+  # are even identical) between the two fields.
+  
   mutate(department = fct_recode(department,
     CLASSIC = "CLS-STDY",
     GERMAN = "GERM-STD")
@@ -130,18 +201,56 @@ spring_2019 <- spring_2019 %>%
 
 ```{r graphic, message = FALSE}
 
+# Create a dataframe containing information regarding the undergraduate
+# enrollment of the top ten most enrolled departments in spring 2019
+
 topten_2019 <- spring_2019 %>%
+  
+  # Filter out certain departments that would otherwise show up in the top ten,
+  # such as US-WORLD (which is a general education requirement, and since the
+  # requirements have changed in content and name since spring 2000, and since
+  # they are required and not elected into, I have chosen to exclude it). Also
+  # filter out expos, since all freshmen are obligated to take it. The last
+  # department I filtered out was physci, which seems to have overlap in the
+  # chemistry and physics department, but is considered the "physical sciences "
+  # department - there seemed to be no direct equivalent in the spring 2000
+  # dataset, which would call for us to investigate correlaries of "physci" in
+  # the future.
+  
   filter(department != "US-WORLD",
          department != "EXPOS",
          department != "PHYSCI") %>%
+  
+  # Group by department so that we can tally up the undergraduate enrollee
+  # counts within each one
+  
   group_by(department) %>%
+  
+  # Count the undergraduate enrollments per department
+  
   mutate(ugrad_ct = sum(u_grad)) %>%
+  
+  # Select for the relevant two columns: department and total undergraduate
+  # count per dpt
+  
   select(department, ugrad_ct) %>%
+  
+  # Select for distinct rows to rid of duplicating rows that occurred after we
+  # selected out other identiying information besides department and ugrad_ct
+  
   distinct() %>%
+  
+  # Ungroup - never hurts!
+  
   ungroup() %>%
+  
+  # Arrange from highest to lowest ugrad_ct
+  
   arrange(desc(ugrad_ct)) %>%
-  slice(1:10) %>%
-  print()
+  
+  # Take the top ten values
+  
+  slice(1:10)
 
 
 grouped_2000 <- spring_2000 %>%
